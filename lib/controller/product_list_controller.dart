@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:example_event_bus/model/clear_cart.dart';
 import 'package:example_event_bus/model/product_added_to_cart.dart';
 import 'package:example_event_bus/model/product_removed_to_cart.dart';
@@ -10,11 +12,14 @@ class ProductListController extends GetxController {
   final eventBus = Get.find<EventBusService>();
   final scrollController = ScrollController();
 
+  StreamSubscription<ProductAddedToCart>? _productAddedSubscription;
+  StreamSubscription<ClearCart>? _clearCartSubscription;
+
   @override
   void onInit() {
     super.onInit();
     _productAddedListener();
-    clearCartListener();
+    _clearCartListener();
   }
 
   void deleteProduct(ProductAddedToCart product) {
@@ -29,8 +34,9 @@ class ProductListController extends GetxController {
     }
   }
 
-  void clearCartListener() {
-    eventBus.on<ClearCart>().listen((event) {
+  void _clearCartListener() {
+    _clearCartSubscription?.cancel();
+    _clearCartSubscription = eventBus.on<ClearCart>().listen((event) {
       try {
         items.clear();
         items.refresh();
@@ -42,7 +48,8 @@ class ProductListController extends GetxController {
   }
 
   void _productAddedListener() {
-    eventBus.on<ProductAddedToCart>().listen((event) {
+    _productAddedSubscription?.cancel();
+    _productAddedSubscription = eventBus.on<ProductAddedToCart>().listen((event) {
       try {
         items.add(event);
         debugPrint('Product added to cart: ${event.productName}');
@@ -59,5 +66,12 @@ class ProductListController extends GetxController {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeIn,
     );
+  }
+
+  @override
+  void onClose() {
+    _productAddedSubscription?.cancel();
+    _clearCartSubscription?.cancel();
+    super.onClose();
   }
 }
